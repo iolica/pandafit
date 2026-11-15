@@ -3,6 +3,7 @@ const SDK_FIREBASE = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-';
 const CHAVE_UID = 'pandafit_uid';
 const CHAVE_PENDENTE = 'pandafit_pendente';
 const CHAVE_FOTOS_OK = 'pandafit_fotos_ok';
+const SENHA_MINIMA = 8;
 
 // Cada parte vira um documento (limite de 1 MB por documento no Firestore); o resto vai em "base"
 const PARTES = { log: ['log'], dieta: ['dieta'], corpo: ['medidas', 'sono'] };
@@ -48,8 +49,8 @@ function telaLogin(mensagem = '', erro = true) {
     ${mensagem ? `<p class="${erro ? 'msg-erro' : 'msg-ok'}">${esc(mensagem)}</p>` : ''}
     <form class="form" data-form="login">
       <label class="campo">E-mail<input id="login-email" name="email" type="email" autocomplete="email" value="${esc(nuvem.email)}" required></label>
-      <label class="campo">Senha${criar ? ' (mínimo 6 caracteres)' : ''}<input name="senha" type="password" minlength="6" autocomplete="${criar ? 'new-password' : 'current-password'}" required></label>
-      ${criar ? '<label class="campo">Repita a senha<input name="senha2" type="password" minlength="6" autocomplete="new-password" required></label>' : ''}
+      <label class="campo">Senha${criar ? ` (mínimo ${SENHA_MINIMA} caracteres)` : ''}<input name="senha" type="password" minlength="${criar ? SENHA_MINIMA : 6}" autocomplete="${criar ? 'new-password' : 'current-password'}" required></label>
+      ${criar ? `<label class="campo">Repita a senha<input name="senha2" type="password" minlength="${SENHA_MINIMA}" autocomplete="new-password" required></label>` : ''}
       <button type="submit" class="botao-principal">${criar ? 'Criar conta' : 'Entrar'}</button>
     </form>
     <button class="botao-sec centro" data-acao="login-google">Entrar com Google</button>
@@ -64,7 +65,8 @@ function erroDeLogin(e) {
     'auth/wrong-password': 'Senha incorreta.',
     'auth/invalid-credential': 'E-mail ou senha incorretos.',
     'auth/email-already-in-use': 'Já existe uma conta com esse e-mail. Toque em "Já tenho conta".',
-    'auth/weak-password': 'Senha fraca. Use pelo menos 6 caracteres.',
+    'auth/weak-password': 'Senha fraca. Use pelo menos 8 caracteres.',
+    'auth/requires-recent-login': 'Por segurança, saia da conta, entre de novo e repita a operação.',
     'auth/network-request-failed': 'Sem conexão com a internet.',
     'auth/too-many-requests': 'Muitas tentativas. Aguarde alguns minutos.',
     'auth/operation-not-allowed': 'Esse tipo de login não está ativado no Firebase.',
@@ -76,6 +78,7 @@ function erroDeLogin(e) {
 
 FORMS['login'] = async (dados, form) => {
   nuvem.email = dados.email.trim();
+  if (nuvem.criando && dados.senha.length < SENHA_MINIMA) return telaLogin(`A senha precisa ter pelo menos ${SENHA_MINIMA} caracteres.`);
   if (nuvem.criando && dados.senha !== dados.senha2) return telaLogin('As senhas não são iguais.');
   form.querySelector('[type="submit"]').disabled = true;
   try {
@@ -287,7 +290,8 @@ function htmlConta() {
   const situacao = lsGet(CHAVE_PENDENTE) ? 'Há alterações aguardando envio' : nuvem.ultimaSinc ? `Salvo na conta às ${horaMin(nuvem.ultimaSinc)}` : 'Dados salvos na conta';
   return `<div class="cartao-bloco"><strong>${esc(email)}</strong><span class="sub">${situacao}</span></div>
     <button class="botao-sec" data-acao="sincronizar">Sincronizar agora</button>
-    <button class="botao-sec" data-acao="sair">Sair da conta</button>`;
+    <button class="botao-sec" data-acao="sair">Sair da conta</button>
+    <button class="botao-sec perigo" data-acao="excluir-conta">Excluir minha conta e meus dados</button>`;
 }
 
 ACOES['sincronizar'] = async () => {
@@ -303,12 +307,49 @@ ACOES['sair'] = async () => {
   try { clearTimeout(nuvem.timer); await enviarDados(); await sincronizarFotos(); } catch (e) { enviou = false; }
   if (!enviou && !confirm('Sem internet: as últimas alterações ainda não foram salvas na conta. Sair mesmo assim e perdê-las?')) return;
   fecharFolha();
+  await limparAparelho();
+  await nuvem.auth.signOut();
+};
+
+function limparAparelho() {
+  clearTimeout(nuvem.timer);
   [CHAVE, CHAVE_UID, CHAVE_PENDENTE, CHAVE_FOTOS_OK].forEach(lsDel);
-  try { await limparFotos(); } catch (e) {}
   estado = carregar();
   nuvem.enviado = {};
   nuvem.criando = false;
-  await nuvem.auth.signOut();
+  return limparFotos().catch(() => {});
+}
+
+// Pede a senha (ou o Google) de novo antes de apagar: confirma que e o dono da conta
+ACOES['excluir-conta'] = async () => {
+  const u = nuvem.usuario;
+  if (!u || !navigator.onLine) return aviso('Sem conexão. Para excluir a conta é preciso internet.');
+  if (!confirm('Excluir sua conta e TODOS os seus dados (treinos, jejuns, dieta, medidas e fotos)?\n\nIsso não pode ser desfeito.')) return;
+  try {
+    if (u.providerData.some((p) => p.providerId === 'password')) {
+      const senha = prompt('Digite sua senha para confirmar a exclusão:');
+      if (!senha) return;
+      await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, senha));
+    } else {
+      await u.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+    }
+  } catch (e) {
+    return aviso(erroDeLogin(e));
+  }
+  try {
+    clearTimeout(nuvem.timer);
+    const fotos = await comPrazo(docsFotos().get());
+    const ids = [];
+    fotos.forEach((d) => ids.push(d.id));
+    for (const id of ids) await docsFotos().doc(id).delete();
+    for (const nome of ['base', ...Object.keys(PARTES)]) await docsDados().doc(nome).delete();
+    fecharFolha();
+    await limparAparelho();
+    await u.delete();
+    aviso('Conta e dados excluídos');
+  } catch (e) {
+    aviso('Não foi possível excluir agora. Tente de novo.');
+  }
 };
 
 window.addEventListener('online', () => nuvemSincronizar());
