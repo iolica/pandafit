@@ -1,8 +1,8 @@
 // Service worker: rede primeiro (pega atualizacoes), cache como reserva offline
-const CACHE = 'pandafit-v3';
+const CACHE = 'pandafit-v5';
 const ARQUIVOS = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
-  'exercicios.js', 'alimentos.js', 'nucleo.js', 'treino.js', 'jejum.js', 'dieta.js', 'corpo.js', 'inicio.js', 'app.js',
+  'exercicios.js', 'alimentos.js', 'nucleo.js', 'treino.js', 'jejum.js', 'dieta.js', 'corpo.js', 'inicio.js', 'nuvem.js', 'firebase-config.js', 'app.js',
   'icon-192.png', 'icon-512.png', 'icon-maskable-512.png',
 ];
 
@@ -18,9 +18,11 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// As fotos dos exercicios (outro site) entram no cache conforme sao vistas
+// De outros sites so guarda as fotos dos exercicios e a biblioteca do Firebase; as chamadas da nuvem passam direto
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  if (url.origin !== location.origin && !/(^|\.)(githubusercontent\.com|gstatic\.com)$/.test(url.hostname)) return;
   e.respondWith(
     fetch(e.request)
       .then((resp) => {

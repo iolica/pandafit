@@ -61,6 +61,7 @@ ACOES['biotipo'] = (el) => {
 
 /* --- Opcoes e backup --- */
 ACOES['abrir-config'] = () => abrirFolha('Opções', `
+  ${htmlConta()}
   <label class="campo">Descanso padrão entre séries (segundos)
     <input type="number" inputmode="numeric" min="0" step="5" value="${estado.cfg.descanso}" data-mudar="cfg-descanso"></label>
   <label class="campo-linha"><input type="checkbox" data-mudar="cfg-som"${estado.cfg.som ? ' checked' : ''}> Som no fim do descanso e do jejum</label>
@@ -70,7 +71,7 @@ ACOES['abrir-config'] = () => abrirFolha('Opções', `
   <h3>Backup</h3>
   <button class="botao-sec" data-acao="exportar">Salvar backup em arquivo</button>
   <label class="botao-sec">Restaurar backup de um arquivo<input type="file" accept=".json,application/json" data-mudar="importar" hidden></label>
-  <p class="sub">Seus dados ficam só neste aparelho. Faça backup antes de trocar de celular ou limpar o navegador.</p>
+  <p class="sub">${nuvem.ativa ? 'Seus dados já ficam salvos na sua conta. O arquivo de backup é só uma cópia extra.' : 'Seus dados ficam só neste aparelho. Faça backup antes de trocar de celular ou limpar o navegador.'}</p>
   <button class="botao-sec perigo" data-acao="apagar-tudo">Apagar todos os dados</button>`);
 
 MUDANCAS['cfg-descanso'] = (el) => { estado.cfg.descanso = Math.max(0, Math.round(num(el.value))); salvar(); render(); };
@@ -93,9 +94,11 @@ ACOES['limpar-dia'] = () => {
 
 ACOES['apagar-tudo'] = async () => {
   if (!confirm('Apagar TODOS os dados do app (treinos, jejuns, dieta, medidas e fotos)? Isso não pode ser desfeito.')) return;
+  try { for (const f of await listarFotos()) await apagarFoto(f.id); } catch (e) {}
   try { localStorage.removeItem(CHAVE); } catch (e) {}
-  try { await limparFotos(); } catch (e) {}
   estado = carregar();
+  if (nuvem.ativa) estado.fotosIds = [];
+  salvar();
   fecharFolha();
   mostrar();
 };
@@ -119,10 +122,12 @@ MUDANCAS['importar'] = async (el) => {
     const dados = JSON.parse(await arquivo.text());
     if (dados.app !== 'treino-iolico' || !dados.estado || !dados.estado.plano) throw new Error('formato');
     if (!confirm('Restaurar este backup substitui os dados atuais do app. Continuar?')) return;
+    for (const f of await listarFotos()) await apagarFoto(f.id);
     localStorage.setItem(CHAVE, JSON.stringify(dados.estado));
     estado = carregar();
-    await limparFotos();
+    estado.fotosIds = nuvem.ativa ? [] : undefined;
     for (const f of dados.fotos || []) await salvarFoto(f);
+    salvar();
     fecharFolha();
     mostrar();
     aviso('Backup restaurado');
@@ -173,8 +178,13 @@ document.addEventListener('submit', (ev) => {
 });
 
 setInterval(() => { tickTreino(); tickJejum(); }, 1000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && !$('principal').hidden) render(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return nuvemEnviarJa();
+  if (!$('principal').hidden) render();
+  nuvemSincronizar();
+});
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
-mostrar();
+if (nuvem.ativa) nuvemIniciar();
+else mostrar();

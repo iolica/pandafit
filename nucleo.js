@@ -86,11 +86,13 @@ let estado = carregar();
 let avisouEspaco = false;
 
 function salvar() {
+  estado._mod = Date.now();
   try {
     localStorage.setItem(CHAVE, JSON.stringify(estado));
   } catch (e) {
     if (!avisouEspaco) { avisouEspaco = true; alert('Não foi possível salvar: o armazenamento do aparelho está cheio.'); }
   }
+  nuvemAgendar();
 }
 
 function esc(txt) {
@@ -336,6 +338,14 @@ async function fotosOp(modo, fn) {
   });
 }
 const listarFotos = async () => ((await fotosOp('readonly', (s) => s.getAll())) || []).sort((a, b) => a.d.localeCompare(b.d) || a.id - b.id);
-const salvarFoto = (foto) => fotosOp('readwrite', (s) => s.put(foto));
-const apagarFoto = (id) => fotosOp('readwrite', (s) => s.delete(id));
+const guardarFotoLocal = (foto) => fotosOp('readwrite', (s) => s.put(foto));
+const removerFotoLocal = (id) => fotosOp('readwrite', (s) => s.delete(id));
+async function salvarFoto(foto) {
+  await guardarFotoLocal(foto);
+  if (nuvem.ativa) nuvemFotoNova(foto.id);
+}
+async function apagarFoto(id) {
+  await removerFotoLocal(id);
+  if (nuvem.ativa) nuvemFotoApagada(id);
+}
 const limparFotos = () => fotosOp('readwrite', (s) => s.clear());
