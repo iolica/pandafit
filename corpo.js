@@ -184,7 +184,7 @@ let fotosCache = [];
 
 function htmlFotos() {
   return `
-    <label class="botao-principal centro">📷 Adicionar foto<input type="file" accept="image/*" data-mudar="foto-nova" hidden></label>
+    <label class="botao-principal centro" for="campo-foto-corpo">📷 Adicionar foto</label>
     <p class="sub centro">${nuvem.ativa ? 'As fotos ficam salvas na sua conta. Só você tem acesso.' : 'As fotos ficam guardadas só neste aparelho.'}</p>
     <div id="grade-fotos" class="grade-fotos"><p class="vazio">Carregando...</p></div>`;
 }
@@ -220,6 +220,7 @@ function reduzirImagem(arquivo, lado = 1000) {
 MUDANCAS['foto-nova'] = async (el) => {
   const arquivo = el.files[0];
   if (!arquivo) return;
+  el.value = '';
   try {
     // Cada foto precisa caber em um documento da nuvem (1 MB)
     let img = await reduzirImagem(arquivo);

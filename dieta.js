@@ -48,7 +48,7 @@ TELAS.dieta = function renderDieta() {
       ${barraMeta('Gordura', tot.f, macros.f, 'g')}
     </div>
     <div class="acoes-dieta">
-      <label class="botao-principal" data-acao="dieta-agora">📷 Foto do prato${campoFoto(true)}</label>
+      <label class="botao-principal" for="campo-foto-camera" data-acao="dieta-agora">📷 Foto do prato</label>
       <button class="botao-principal contorno" data-acao="codigo-agora">Código de barras</button>
     </div>
     ${estado.perfil ? '' : '<p class="aviso">Preencha seu perfil na aba Corpo para a meta ficar certa para você.</p>'}

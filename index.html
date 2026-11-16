@@ -60,6 +60,11 @@
 <div id="aviso-rapido" class="aviso-rapido" hidden></div>
 <div id="dica-grafico" class="dica-grafico" hidden></div>
 
+<!-- Ficam fora das telas: ao voltar da camera a tela e redesenhada e um campo dentro dela perderia a foto -->
+<input id="campo-foto-camera" type="file" accept="image/*" capture="environment" data-mudar="foto-prato" hidden>
+<input id="campo-foto-galeria" type="file" accept="image/*" data-mudar="foto-prato" hidden>
+<input id="campo-foto-corpo" type="file" accept="image/*" data-mudar="foto-nova" hidden>
+
 <script src="firebase-config.js"></script>
 <script src="exercicios.js"></script>
 <script src="alimentos.js"></script>

@@ -1,5 +1,5 @@
 // Service worker: rede primeiro (pega atualizacoes), cache como reserva offline
-const CACHE = 'pandafit-v8';
+const CACHE = 'pandafit-v9';
 const ARQUIVOS = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
   'exercicios.js', 'alimentos.js', 'nucleo.js', 'treino.js', 'jejum.js', 'dieta.js', 'leitor.js', 'corpo.js', 'inicio.js', 'nuvem.js', 'firebase-config.js', 'app.js',

@@ -17,12 +17,10 @@ const iaLigada = () => typeof FIREBASE_CONFIG !== 'undefined' && !!FIREBASE_CONF
 const refeicaoPelaHora = () => { const h = new Date().getHours() + new Date().getMinutes() / 60; return h < 10.5 ? 0 : h < 15 ? 1 : h < 18.5 ? 2 : 3; };
 const restamNoDia = () => metaKcal() + kcalDoDia(dataDieta) - totaisDoDia(dataDieta).kcal;
 
-const campoFoto = (camera) => `<input type="file" accept="image/*"${camera ? ' capture="environment"' : ''} data-mudar="foto-prato" hidden>`;
-
 function opcoesDeLeitura() {
   return `
-    <label class="botao-principal">📷 Tirar foto do prato${campoFoto(true)}</label>
-    <label class="botao-sec centro">Escolher foto da galeria${campoFoto(false)}</label>
+    <label class="botao-principal" for="campo-foto-camera">📷 Tirar foto do prato</label>
+    <label class="botao-sec centro" for="campo-foto-galeria">Escolher foto da galeria</label>
     <button class="botao-sec centro" data-acao="codigo-abrir">Ler código de barras de um produto</button>
     <button class="botao-sec centro" data-acao="dieta-digitar">Buscar na lista ou digitar</button>
     <p class="aviso">A foto é enviada ao Google (Gemini) só para a leitura e não fica guardada no app.</p>`;
@@ -84,6 +82,7 @@ function falhaNaLeitura(texto) {
 MUDANCAS['foto-prato'] = async (el) => {
   const arquivo = el.files[0];
   if (!arquivo) return;
+  el.value = '';
   if (!iaLigada()) return falhaNaLeitura('A leitura por foto ainda não foi ativada neste app.');
   if (fotosHoje() >= FOTOS_POR_DIA) return falhaNaLeitura(`Você já usou as ${FOTOS_POR_DIA} leituras por foto de hoje.`);
   abrirFolha('Foto do prato', '<p class="vazio" id="lendo-prato">Lendo o prato… leva alguns segundos.</p>');
@@ -124,7 +123,7 @@ function mostrarLeitura() {
     <label class="campo">Refeição
       <select data-mudar="leitura-ref">${REFEICOES.map((n, r) => `<option value="${r}"${r === refeicaoAtual ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
     <button class="botao-principal" data-acao="leitura-salvar">Adicionar ao diário</button>
-    <label class="botao-sec centro">Tirar outra foto${campoFoto(true)}</label>`);
+    <label class="botao-sec centro" for="campo-foto-camera">Tirar outra foto</label>`);
 }
 
 DIGITAR['leitura-nome'] = (el) => { leitura[Number(el.dataset.i)].nome = el.value; };
