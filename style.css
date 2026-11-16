@@ -1,4 +1,4 @@
-/* PandaFit - visual (cores tiradas do icone do panda) */
+/* PandaFit - visual (tema escuro com destaque roxo) */
 :root {
   --bg: #12141c;
   --card: #1b1e2a;
@@ -6,9 +6,9 @@
   --borda: #2e3346;
   --texto: #eef1f6;
   --suave: #9ba3b6;
-  --acento: #5fe0cf;
-  --sobre-acento: #0d2a27;
-  --ok: #5fe0cf;
+  --acento: #a78bfa;
+  --sobre-acento: #1a1033;
+  --ok: #a78bfa;
   --perigo: #ff6b70;
 }
 
@@ -235,6 +235,13 @@ a { color: inherit; text-decoration: none; }
 .refeicao { margin-top: 18px; }
 .refeicao-topo { display: flex; align-items: center; gap: 10px; }
 .refeicao-topo strong { flex: 1; }
+.acoes-dieta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.botao-principal.contorno { background: none; border: 1px solid var(--acento); color: var(--acento); }
+.leitura-item { display: grid; grid-template-columns: 1fr 84px auto; gap: 2px 8px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--borda); }
+.leitura-item input { margin: 0; padding: 9px; }
+.leitura-item small { grid-column: 1 / -1; }
+.visor { background: #000; border-radius: 14px; overflow: hidden; aspect-ratio: 4 / 3; }
+.visor video { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 /* --- Inicio --- */
 .calendario { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; text-align: center; }

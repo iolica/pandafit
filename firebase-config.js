@@ -8,3 +8,6 @@ const FIREBASE_CONFIG = {
   messagingSenderId: '132252874068',
   appId: '1:132252874068:web:0c5f78b13974d43a8644c1',
 };
+
+// Chave de site do reCAPTCHA (App Check). Sem ela a leitura do prato por foto fica desligada.
+const RECAPTCHA = { chave: '6LfXNiIuAAAAALc4mT5fvH1NucrZZDQspQgsddlk', enterprise: true };

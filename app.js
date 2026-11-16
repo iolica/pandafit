@@ -13,7 +13,7 @@ function render() {
 ACOES['ir'] = (el) => {
   abaAtual = el.dataset.aba;
   if (el.dataset.sub) subCorpo = el.dataset.sub;
-  history.replaceState(null, '', '#' + abaAtual);
+  history.replaceState(history.state, '', '#' + abaAtual);
   render();
   window.scrollTo(0, 0);
 };
@@ -149,7 +149,32 @@ function mostrarDica(el, ev) {
   caixa.style.top = Math.max(8, ev.clientY - caixa.offsetHeight - 14) + 'px';
 }
 
+/* --- Botao voltar: fecha a folha, depois vai para o Inicio, e so do Inicio sai do app --- */
+// O navegador ignora entradas de historico criadas sem toque na tela; por isso a guarda e refeita no primeiro toque
+let guardaFraca = false;
+let saindo = false;
+const nivelGuarda = () => (history.state && history.state.guarda) || 0;
+
+function porGuarda(fraca) {
+  history.pushState({ guarda: nivelGuarda() + 1 }, '');
+  guardaFraca = fraca;
+}
+
+window.addEventListener('popstate', () => {
+  if (saindo) { saindo = false; return; }
+  if (!$('folha').hidden) fecharFolha();
+  else if (!$('principal').hidden && abaAtual !== 'inicio') ACOES['ir']({ dataset: { aba: 'inicio' } });
+  else {
+    if (nivelGuarda()) { saindo = true; history.go(-nivelGuarda()); }
+    return aviso('Aperte voltar de novo para sair');
+  }
+  porGuarda(true);
+});
+
+if (!nivelGuarda()) porGuarda(true);
+
 document.addEventListener('click', (ev) => {
+  if (!nivelGuarda() || guardaFraca) porGuarda(false);
   mostrarDica(ev.target.closest('[data-dica]'), ev);
   if (ev.target.id === 'folha') return fecharFolha();
   const alvo = ev.target.closest('[data-acao]');

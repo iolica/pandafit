@@ -47,6 +47,10 @@ TELAS.dieta = function renderDieta() {
       ${barraMeta('Carboidrato', tot.c, macros.c, 'g')}
       ${barraMeta('Gordura', tot.f, macros.f, 'g')}
     </div>
+    <div class="acoes-dieta">
+      <label class="botao-principal" data-acao="dieta-agora">📷 Foto do prato${campoFoto(true)}</label>
+      <button class="botao-principal contorno" data-acao="codigo-agora">Código de barras</button>
+    </div>
     ${estado.perfil ? '' : '<p class="aviso">Preencha seu perfil na aba Corpo para a meta ficar certa para você.</p>'}
     ${refeicoes}
     <h3>Calorias nos últimos 7 dias</h3>
@@ -58,6 +62,14 @@ TELAS.dieta = function renderDieta() {
 /* --- Adicionar alimento --- */
 ACOES['dieta-add'] = (el) => {
   refeicaoAtual = Number(el.dataset.r);
+  abrirFolha(REFEICOES[refeicaoAtual], opcoesDeLeitura());
+};
+
+// Pelos botoes do topo a refeicao sai do horario; da para trocar na conferencia
+ACOES['dieta-agora'] = () => { refeicaoAtual = refeicaoPelaHora(); };
+ACOES['codigo-agora'] = () => { refeicaoAtual = refeicaoPelaHora(); ACOES['codigo-abrir'](); };
+
+ACOES['dieta-digitar'] = () => {
   abrirFolha(REFEICOES[refeicaoAtual], `
     <input id="busca-alimento" type="search" placeholder="Buscar alimento" autocomplete="off" data-digitar="busca-alimento">
     <ul id="lista-alimentos"></ul>
@@ -105,7 +117,7 @@ ACOES['dieta-escolher'] = (el) => {
       <div class="chips">${[0.5, 1, 1.5, 2, 3].map((n) => `<button type="button" class="chip" data-acao="dieta-porcoes" data-g="${a.porcao * n}">${String(n).replace('.', ',')}x</button>`).join('')}</div>
       <p class="destaque" id="previa-kcal">${fmt((a.kcal * a.porcao) / 100)} kcal</p>
       <button type="submit" class="botao-principal">Adicionar em ${REFEICOES[refeicaoAtual]}</button>
-      <button type="button" class="botao-sec centro" data-acao="dieta-add" data-r="${refeicaoAtual}">← Voltar para a lista</button>
+      <button type="button" class="botao-sec centro" data-acao="dieta-digitar">← Voltar para a lista</button>
     </form>`);
 };
 
@@ -137,7 +149,7 @@ FORMS['dieta-rapido'] = (dados) => lancar({ nome: dados.nome.trim(), g: 0, kcal:
 
 FORMS['alimento-custom'] = (dados) => {
   const porcao = num(dados.porcao) || 100;
-  estado.alimentosCustom.unshift({ nome: dados.nome.trim(), kcal: num(dados.kcal), p: num(dados.p), c: num(dados.c), f: num(dados.f), porcao, medida: '1 porção' });
+  estado.alimentosCustom.unshift({ nome: dados.nome.trim(), kcal: num(dados.kcal), p: num(dados.p), c: num(dados.c), f: num(dados.f), porcao, medida: '1 porção', ...(dados.cod ? { cod: dados.cod } : {}) });
   salvar();
   ACOES['dieta-escolher']({ dataset: { i: '0' } });
 };
